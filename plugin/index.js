@@ -28,17 +28,17 @@ module.exports = function (app) {
         uniqueNumber: {
           type: 'number',
           title: 'ISO unique number',
-          default: 0x1a6001,
+          default: 0x1a5001,
         },
         productCode: {
           type: 'number',
           title: 'Product code (126996)',
-          default: 22160,
+          default: 22150,
         },
         modelId: {
           type: 'string',
           title: 'Model ID (126996)',
-          default: 'V60',
+          default: 'V50',
         },
         ownMmsi: {
           type: 'string',

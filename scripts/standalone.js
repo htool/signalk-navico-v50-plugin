@@ -10,8 +10,8 @@ const opts = mergeOptions({
   canDevice: process.env.CAN_DEVICE || 'can0',
   preferredAddress: Number(process.env.V50_ADDR || process.env.V60_ADDR || 25),
   ownMmsi: process.env.V50_MMSI || process.env.V60_MMSI || '244060123',
-  modelId: process.env.VHF_MODEL || 'V60',
-  modelVersion: process.env.VHF_MODEL || 'V60',
+  modelId: process.env.VHF_MODEL || 'V50',
+  modelVersion: process.env.VHF_MODEL || 'V50',
 })
 const port = Number(process.env.PORT || 3099)
 
