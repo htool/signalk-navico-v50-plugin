@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="navico-store" content="mfd-insight-store">
+  <title>V60 DSC</title>
+  <style>
+    :root { --bg:#0e151c; --fg:#e8eef4; --muted:#8a9bab; --accent:#2a9d8f; --warn:#e9c46a; --bad:#e76f51; }
+    * { box-sizing: border-box; }
+    body { margin:0; font:15px/1.4 system-ui,sans-serif; background:var(--bg); color:var(--fg); }
+    main { max-width:720px; margin:0 auto; padding:1rem; }
+    h1 { font-size:1.25rem; margin:0 0 .25rem; }
+    .sub { color:var(--muted); margin-bottom:1rem; }
+    section { border-top:1px solid #243040; padding:1rem 0; }
+    label { display:block; color:var(--muted); font-size:.8rem; margin:.4rem 0 .15rem; }
+    input, select, button {
+      font:inherit; padding:.45rem .6rem; border-radius:4px; border:1px solid #334; background:#16202a; color:var(--fg);
+    }
+    button { background:var(--accent); border-color:transparent; color:#042; font-weight:600; cursor:pointer; }
+    button.secondary { background:#243040; color:var(--fg); }
+    .row { display:flex; gap:.5rem; flex-wrap:wrap; align-items:end; }
+    .pill { display:inline-block; padding:.15rem .5rem; border-radius:999px; background:#243040; font-size:.8rem; }
+    .ok { color:var(--accent); } .bad { color:var(--bad); }
+    pre { background:#0a1016; padding:.75rem; overflow:auto; font-size:.75rem; max-height:240px; }
+    .steps { list-style:none; padding:0; }
+    .steps li { padding:.35rem 0; color:var(--muted); }
+    .steps li.on { color:var(--fg); }
+    .steps li.done { color:var(--accent); }
+  </style>
+</head>
+<body>
+<main>
+  <h1>B&amp;G V60 — DSC Call flow</h1>
+  <p class="sub">Emulator for Zeus Call button. Status refreshes every 2s.</p>
+
+  <section>
+    <div>Radio <span id="model" class="pill">—</span>
+      addr <span id="addr" class="pill">—</span>
+      <span id="cansend" class="pill">—</span>
+    </div>
+    <div class="row" style="margin-top:.75rem">
+      <div>
+        <label>Own MMSI</label>
+        <input id="ownMmsi" size="12">
+      </div>
+      <div>
+        <label>DSC enabled</label>
+        <select id="dscEnabled"><option value="true">yes</option><option value="false">no</option></select>
+      </div>
+      <div>
+        <label>Auto-reply status</label>
+        <select id="autoReply"></select>
+      </div>
+      <button class="secondary" id="saveOpts">Save</button>
+    </div>
+  </section>
+
+  <section>
+    <h2 style="font-size:1rem;margin:0 0 .5rem">Simulate Call (as if Zeus pressed Call)</h2>
+    <ol class="steps" id="steps">
+      <li data-s="idle">1. Idle — V60 claimed on N2K</li>
+      <li data-s="confirm">2. Confirm dialog (MMSI + channel)</li>
+      <li data-s="event">3. NDP2k event id 3 Init DSC Call</li>
+      <li data-s="reply">4. Radio reply status byte</li>
+      <li data-s="done">5. Zeus UI shows result / closes</li>
+    </ol>
+    <div class="row">
+      <div>
+        <label>Target MMSI</label>
+        <input id="mmsi" value="244123456" size="12">
+      </div>
+      <div>
+        <label>Channel</label>
+        <input id="channel" type="number" value="16" min="1" max="88" style="width:4rem">
+      </div>
+      <button id="callBtn">Call</button>
+    </div>
+    <p id="result" class="sub"></p>
+  </section>
+
+  <section>
+    <h2 style="font-size:1rem;margin:0 0 .5rem">Last calls</h2>
+    <pre id="calls">[]</pre>
+  </section>
+
+  <section>
+    <h2 style="font-size:1rem;margin:0 0 .5rem">Bus log</h2>
+    <pre id="bus">[]</pre>
+  </section>
+</main>
+<script src="app.js"></script>
+</body>
+</html>
