@@ -27,23 +27,23 @@ module.exports = function (app) {
         },
         uniqueNumber: {
           type: 'number',
-          title: 'ISO unique number',
-          default: 0x1a5001,
+          title: 'ISO unique number (15-bit serial)',
+          default: 12345,
         },
         productCode: {
           type: 'number',
           title: 'Product code (126996)',
-          default: 22150,
+          default: 30041,
         },
         modelId: {
           type: 'string',
           title: 'Model ID (126996)',
-          default: 'V50',
+          default: 'V60B',
         },
         ownMmsi: {
           type: 'string',
-          title: 'Own MMSI',
-          default: '244060123',
+          title: 'Own MMSI (lab test)',
+          default: '244999001',
         },
         dscEnabled: {
           type: 'boolean',

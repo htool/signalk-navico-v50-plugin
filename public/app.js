@@ -60,6 +60,43 @@
     x.send(JSON.stringify(body || {}))
   }
 
+  function renderRx(st) {
+    var pkt = st.lastReceivedPacket
+    var last = st.lastCall
+    // Prefer explicit lastReceivedPacket; fall back to last bus call with packet.
+    if (!pkt && last && last.source === 'bus' && last.packet) pkt = last.packet
+    var empty = document.getElementById('rxEmpty')
+    var panel = document.getElementById('rxPanel')
+    if (!pkt) {
+      empty.style.display = ''
+      panel.style.display = 'none'
+      return
+    }
+    empty.style.display = 'none'
+    panel.style.display = ''
+    document.getElementById('rxPgn').textContent = 'PGN ' + (pkt.pgn != null ? pkt.pgn : '—')
+    document.getElementById('rxEvent').textContent =
+      'event ' + (pkt.eventId != null ? pkt.eventId : '—') + ' — ' + (pkt.eventName || 'Init DSC Call')
+    document.getElementById('rxMan').textContent =
+      (pkt.manufacturer || 'man') + ' ' + (pkt.manufacturerCode != null ? pkt.manufacturerCode : '')
+    document.getElementById('rxSrcDst').textContent =
+      'src ' + (pkt.src != null ? pkt.src : '—') + ' → dst ' + (pkt.dst != null ? pkt.dst : '—')
+    document.getElementById('rxAddr').textContent =
+      pkt.address != null ? String(pkt.address) + (pkt.address === 255 ? ' (broadcast)' : '') : '—'
+    document.getElementById('rxCmd').textContent = pkt.command != null ? String(pkt.command) : '—'
+    document.getElementById('rxLayout').textContent = pkt.layout || '—'
+    var replyEl = document.getElementById('rxReply')
+    if (last && last.source === 'bus' && last.replyStatus != null) {
+      replyEl.textContent = last.replyStatus + ' — ' + (last.replyLabel || '')
+      replyEl.className = 'pill ' + (last.replyStatus === 0 ? 'ok' : 'bad')
+    } else {
+      replyEl.textContent = '—'
+      replyEl.className = 'pill'
+    }
+    document.getElementById('rxRaw').textContent = pkt.rawHex || '—'
+    document.getElementById('rxJson').textContent = JSON.stringify(pkt, null, 2)
+  }
+
   function render(st) {
     if (!st || st.error) return
     document.getElementById('model').textContent = st.modelId || '—'
@@ -72,7 +109,12 @@
     document.getElementById('autoReply').value = String(st.autoReplyStatus)
     document.getElementById('calls').textContent = JSON.stringify(st.calls || [], null, 2)
     document.getElementById('bus').textContent = JSON.stringify(st.busLog || [], null, 2)
-    if (st.cansend) setStep(st.lastCall ? 'done' : 'idle')
+    renderRx(st)
+    if (st.cansend) {
+      if (st.lastReceivedPacket) setStep('done')
+      else if (st.lastCall) setStep('done')
+      else setStep('idle')
+    }
   }
 
   function refresh() {

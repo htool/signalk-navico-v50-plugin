@@ -80,6 +80,41 @@
   </section>
 
   <section>
+    <h2 style="font-size:1rem;margin:0 0 .5rem">Last received DSC call (from bus)</h2>
+    <p class="sub" id="rxEmpty">No Init DSC Call received yet. Press Call on the MFD AIS target page, or use cansend lab inject.</p>
+    <div id="rxPanel" style="display:none">
+      <div class="row">
+        <span class="pill" id="rxPgn">—</span>
+        <span class="pill" id="rxEvent">—</span>
+        <span class="pill" id="rxMan">—</span>
+        <span class="pill" id="rxSrcDst">—</span>
+      </div>
+      <div class="row" style="margin-top:.5rem">
+        <div>
+          <label>Address (payload)</label>
+          <div id="rxAddr" class="pill">—</div>
+        </div>
+        <div>
+          <label>Command</label>
+          <div id="rxCmd" class="pill">—</div>
+        </div>
+        <div>
+          <label>Layout</label>
+          <div id="rxLayout" class="pill">—</div>
+        </div>
+        <div>
+          <label>Reply</label>
+          <div id="rxReply" class="pill">—</div>
+        </div>
+      </div>
+      <label style="margin-top:.75rem">Raw packet (hex)</label>
+      <pre id="rxRaw">—</pre>
+      <label>Decoded packet JSON</label>
+      <pre id="rxJson">—</pre>
+    </div>
+  </section>
+
+  <section>
     <h2 style="font-size:1rem;margin:0 0 .5rem">Last calls</h2>
     <pre id="calls">[]</pre>
   </section>
