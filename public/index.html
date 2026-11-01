@@ -21,18 +21,34 @@
     button.secondary { background:#243040; color:var(--fg); }
     .row { display:flex; gap:.5rem; flex-wrap:wrap; align-items:end; }
     .pill { display:inline-block; padding:.15rem .5rem; border-radius:999px; background:#243040; font-size:.8rem; }
-    .ok { color:var(--accent); } .bad { color:var(--bad); }
+    .ok { color:var(--accent); } .bad { color:var(--bad); } .warn { color:var(--warn); }
     pre { background:#0a1016; padding:.75rem; overflow:auto; font-size:.75rem; max-height:240px; }
     .steps { list-style:none; padding:0; }
     .steps li { padding:.35rem 0; color:var(--muted); }
     .steps li.on { color:var(--fg); }
     .steps li.done { color:var(--accent); }
+    .kv { min-width:6rem; }
+    .kv .val { font-size:1.1rem; font-weight:600; }
+    .callout {
+      display:none; margin:0 0 1rem; padding:1rem 1.1rem;
+      background:#132018; border-left:4px solid var(--accent);
+    }
+    .callout.show { display:block; }
+    .callout .headline { font-size:1.45rem; font-weight:700; letter-spacing:.02em; margin:0 0 .25rem; }
+    .callout .meta { color:var(--muted); font-size:.9rem; }
+    .callout.partial { border-left-color:var(--warn); }
+    .callout.bad { border-left-color:var(--bad); }
   </style>
 </head>
 <body>
 <main>
   <h1>B&amp;G V60 — DSC Call flow</h1>
-  <p class="sub">Emulator for Zeus Call button. Status refreshes every 2s.</p>
+  <p class="sub">Emulator matches V60B firmware: channel via 130845, dial via 130850. Status refreshes every 2s.</p>
+
+  <div id="callSummary" class="callout" aria-live="polite">
+    <p id="callHeadline" class="headline">—</p>
+    <p id="callMeta" class="meta">—</p>
+  </div>
 
   <section>
     <div>Radio <span id="model" class="pill">—</span>
@@ -60,10 +76,10 @@
     <h2 style="font-size:1rem;margin:0 0 .5rem">Simulate Call (as if Zeus pressed Call)</h2>
     <ol class="steps" id="steps">
       <li data-s="idle">1. Idle — V60 claimed on N2K</li>
-      <li data-s="confirm">2. Confirm dialog (MMSI + channel)</li>
-      <li data-s="event">3. NDP2k event id 3 Init DSC Call</li>
-      <li data-s="reply">4. Radio reply status byte</li>
-      <li data-s="done">5. Zeus UI shows result / closes</li>
+      <li data-s="channel">2. 130845 Set working channel (key 11/AD)</li>
+      <li data-s="dial">3. 130850 dial MMSI (key 0x6F)</li>
+      <li data-s="reply">4. Radio 130851 dial ACK (status byte)</li>
+      <li data-s="done">5. Full call request assembled</li>
     </ol>
     <div class="row">
       <div>
@@ -80,37 +96,39 @@
   </section>
 
   <section>
-    <h2 style="font-size:1rem;margin:0 0 .5rem">Last received DSC call (from bus)</h2>
-    <p class="sub" id="rxEmpty">No Init DSC Call received yet. Press Call on the MFD AIS target page, or use cansend lab inject.</p>
+    <h2 style="font-size:1rem;margin:0 0 .5rem">Call request (V60 path)</h2>
+    <p class="sub" id="rxEmpty">No Call traffic yet. Channel setup arrives before the MFD Call button; dial (MMSI) follows when Call is pressed.</p>
     <div id="rxPanel" style="display:none">
       <div class="row">
-        <span class="pill" id="rxPgn">—</span>
-        <span class="pill" id="rxEvent">—</span>
-        <span class="pill" id="rxMan">—</span>
-        <span class="pill" id="rxSrcDst">—</span>
-      </div>
-      <div class="row" style="margin-top:.5rem">
-        <div>
-          <label>Address (payload)</label>
-          <div id="rxAddr" class="pill">—</div>
+        <div class="kv">
+          <label>MMSI</label>
+          <div id="rxMmsi" class="val">—</div>
         </div>
-        <div>
-          <label>Command</label>
-          <div id="rxCmd" class="pill">—</div>
+        <div class="kv">
+          <label>Channel</label>
+          <div id="rxChannel" class="val">—</div>
         </div>
-        <div>
-          <label>Layout</label>
-          <div id="rxLayout" class="pill">—</div>
+        <div class="kv">
+          <label>Phase</label>
+          <div id="rxPhase" class="pill">—</div>
         </div>
-        <div>
+        <div class="kv">
           <label>Reply</label>
           <div id="rxReply" class="pill">—</div>
         </div>
       </div>
-      <label style="margin-top:.75rem">Raw packet (hex)</label>
-      <pre id="rxRaw">—</pre>
-      <label>Decoded packet JSON</label>
+      <div class="row" style="margin-top:.75rem">
+        <span class="pill" id="rxPending">pending ch —</span>
+        <span class="pill" id="rxKind">—</span>
+      </div>
+      <label style="margin-top:.75rem">Channel packet (130845)</label>
+      <pre id="rxChannelPkt">—</pre>
+      <label>Dial packet (130850)</label>
+      <pre id="rxDialPkt">—</pre>
+      <label>Last received packet JSON</label>
       <pre id="rxJson">—</pre>
+      <label>Full call request JSON</label>
+      <pre id="rxRequest">—</pre>
     </div>
   </section>
 

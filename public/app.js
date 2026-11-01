@@ -51,7 +51,6 @@
   function post(url, body, cb) {
     var x = new XMLHttpRequest()
     x.open('POST', base + url)
-    x.setHeader && x.setRequestHeader('Content-Type', 'application/json')
     x.setRequestHeader('Content-Type', 'application/json')
     x.onload = function () {
       try { cb(null, JSON.parse(x.responseText)) } catch (e) { cb(e) }
@@ -60,41 +59,131 @@
     x.send(JSON.stringify(body || {}))
   }
 
+  function fmtPkt(pkt) {
+    if (!pkt) return '—'
+    var lines = []
+    if (pkt.pgn != null) lines.push('PGN ' + pkt.pgn)
+    if (pkt.eventName) lines.push(pkt.eventName)
+    if (pkt.rawHex) lines.push(pkt.rawHex)
+    else lines.push(JSON.stringify(pkt, null, 2))
+    return lines.join('\n')
+  }
+
+  function stepFromRequest(req, st) {
+    if (!req) {
+      if (st.cansend) setStep('idle')
+      return
+    }
+    if (req.phase === 'complete' || req.replyStatus != null) setStep('done')
+    else if (req.phase === 'dial' || req.dialPacket) setStep('dial')
+    else if (req.phase === 'channel' || req.channelPacket) setStep('channel')
+    else if (req.phase === 'init-event') setStep('dial')
+    else setStep('idle')
+  }
+
+  function callHeadline(mmsi, channel, phase, replyStatus) {
+    var dialed = phase === 'dial' || phase === 'complete' || phase === 'init-event'
+    if (!dialed) {
+      // 130845 working-channel (and similar) before MFD Call confirm
+      if (channel != null && mmsi) {
+        return 'Call setup received · MMSI ' + mmsi + ' · channel ' + channel
+      }
+      if (channel != null) return 'Call setup received · channel ' + channel
+      if (mmsi) return 'Call setup received · MMSI ' + mmsi
+      return null
+    }
+    if (replyStatus != null) {
+      if (mmsi && channel != null) return 'Called ' + mmsi + ' on channel ' + channel
+      if (mmsi) return 'Called ' + mmsi
+      if (channel != null) return 'Called on channel ' + channel
+      return 'Call completed'
+    }
+    if (mmsi && channel != null) return 'Calling ' + mmsi + ' on channel ' + channel
+    if (mmsi) return 'Calling ' + mmsi + ' (channel pending)'
+    if (channel != null) return 'Calling on channel ' + channel
+    return 'Calling…'
+  }
+
+  function renderSummary(st, mmsi, channel, replyStatus, replyLabel, phase) {
+    var box = document.getElementById('callSummary')
+    var head = callHeadline(mmsi, channel, phase, replyStatus)
+    if (!head) {
+      box.className = 'callout'
+      return
+    }
+    var dialed = phase === 'dial' || phase === 'complete' || phase === 'init-event'
+    var cls = 'callout show'
+    if (replyStatus != null && replyStatus !== 0) cls += ' bad'
+    else if (!dialed) cls += ' partial'
+    document.getElementById('callHeadline').textContent = head
+    var meta = []
+    if (!dialed) meta.push('waiting for Call button (130850 dial)')
+    else if (phase) meta.push('phase ' + phase)
+    if (replyStatus != null) {
+      meta.push('reply ' + replyStatus + ' — ' + (replyLabel || labels[replyStatus] || ''))
+    }
+    document.getElementById('callMeta').textContent = meta.join(' · ') || 'from N2K'
+    box.className = cls
+  }
+
   function renderRx(st) {
+    var req = st.lastCallRequest
     var pkt = st.lastReceivedPacket
     var last = st.lastCall
-    // Prefer explicit lastReceivedPacket; fall back to last bus call with packet.
-    if (!pkt && last && last.source === 'bus' && last.packet) pkt = last.packet
     var empty = document.getElementById('rxEmpty')
     var panel = document.getElementById('rxPanel')
-    if (!pkt) {
+
+    // Prefer the live request; only fall back to lastCall once a dial/complete exists.
+    var phase = (req && req.phase) || null
+    var dialed = phase === 'dial' || phase === 'complete' || phase === 'init-event'
+    var mmsi = (req && req.mmsi) || (pkt && pkt.mmsi) || null
+    var channel = (req && req.channel != null) ? req.channel
+      : (pkt && pkt.channel != null) ? pkt.channel
+      : st.pendingChannel
+    if (dialed && mmsi == null && last) mmsi = last.mmsi || mmsi
+    if (dialed && channel == null && last && last.channel != null) channel = last.channel
+    var replyStatus = (req && req.replyStatus != null) ? req.replyStatus
+      : (dialed && last && last.replyStatus != null) ? last.replyStatus
+      : null
+    var replyLabel = (req && req.replyLabel) || (dialed && last && last.replyLabel) || null
+
+    renderSummary(st, mmsi, channel, replyStatus, replyLabel, phase)
+
+    if (!req && !pkt && !(last && (last.mmsi || last.channel != null))) {
       empty.style.display = ''
       panel.style.display = 'none'
       return
     }
     empty.style.display = 'none'
     panel.style.display = ''
-    document.getElementById('rxPgn').textContent = 'PGN ' + (pkt.pgn != null ? pkt.pgn : '—')
-    document.getElementById('rxEvent').textContent =
-      'event ' + (pkt.eventId != null ? pkt.eventId : '—') + ' — ' + (pkt.eventName || 'Init DSC Call')
-    document.getElementById('rxMan').textContent =
-      (pkt.manufacturer || 'man') + ' ' + (pkt.manufacturerCode != null ? pkt.manufacturerCode : '')
-    document.getElementById('rxSrcDst').textContent =
-      'src ' + (pkt.src != null ? pkt.src : '—') + ' → dst ' + (pkt.dst != null ? pkt.dst : '—')
-    document.getElementById('rxAddr').textContent =
-      pkt.address != null ? String(pkt.address) + (pkt.address === 255 ? ' (broadcast)' : '') : '—'
-    document.getElementById('rxCmd').textContent = pkt.command != null ? String(pkt.command) : '—'
-    document.getElementById('rxLayout').textContent = pkt.layout || '—'
+
+    document.getElementById('rxPhase').textContent = phase || '—'
+    document.getElementById('rxPhase').className =
+      'pill ' + (phase === 'complete' ? 'ok' : phase === 'channel' ? 'warn' : '')
+
+    document.getElementById('rxMmsi').textContent = mmsi != null ? String(mmsi) : '—'
+    document.getElementById('rxChannel').textContent = channel != null ? String(channel) : '—'
+
     var replyEl = document.getElementById('rxReply')
-    if (last && last.source === 'bus' && last.replyStatus != null) {
-      replyEl.textContent = last.replyStatus + ' — ' + (last.replyLabel || '')
-      replyEl.className = 'pill ' + (last.replyStatus === 0 ? 'ok' : 'bad')
+    if (replyStatus != null) {
+      replyEl.textContent = replyStatus + ' — ' + (replyLabel || labels[replyStatus] || '')
+      replyEl.className = 'pill ' + (replyStatus === 0 ? 'ok' : 'bad')
     } else {
       replyEl.textContent = '—'
       replyEl.className = 'pill'
     }
-    document.getElementById('rxRaw').textContent = pkt.rawHex || '—'
-    document.getElementById('rxJson').textContent = JSON.stringify(pkt, null, 2)
+
+    document.getElementById('rxPending').textContent =
+      'pending ch ' + (st.pendingChannel != null ? st.pendingChannel : '—')
+    document.getElementById('rxKind').textContent =
+      (req && req.replyKind) ? 'reply ' + req.replyKind
+        : (pkt && pkt.kind) ? pkt.kind
+        : (pkt && pkt.layout) || '—'
+
+    document.getElementById('rxChannelPkt').textContent = fmtPkt(req && req.channelPacket)
+    document.getElementById('rxDialPkt').textContent = fmtPkt(req && req.dialPacket)
+    document.getElementById('rxJson').textContent = pkt ? JSON.stringify(pkt, null, 2) : '—'
+    document.getElementById('rxRequest').textContent = req ? JSON.stringify(req, null, 2) : '—'
   }
 
   function render(st) {
@@ -110,11 +199,7 @@
     document.getElementById('calls').textContent = JSON.stringify(st.calls || [], null, 2)
     document.getElementById('bus').textContent = JSON.stringify(st.busLog || [], null, 2)
     renderRx(st)
-    if (st.cansend) {
-      if (st.lastReceivedPacket) setStep('done')
-      else if (st.lastCall) setStep('done')
-      else setStep('idle')
-    }
+    stepFromRequest(st.lastCallRequest, st)
   }
 
   function refresh() {
@@ -134,8 +219,8 @@
   }
 
   document.getElementById('callBtn').onclick = function () {
-    setStep('confirm')
-    setTimeout(function () { setStep('event') }, 200)
+    setStep('channel')
+    setTimeout(function () { setStep('dial') }, 150)
     post('/call', {
       mmsi: document.getElementById('mmsi').value,
       channel: Number(document.getElementById('channel').value),
@@ -148,7 +233,10 @@
         return
       }
       el.className = call.replyStatus === 0 ? 'ok' : 'bad'
-      el.textContent = 'Reply ' + call.replyStatus + ' — ' + (call.replyLabel || '')
+      el.textContent =
+        'MMSI ' + (call.mmsi || '—') +
+        ' ch ' + (call.channel != null ? call.channel : '—') +
+        ' → reply ' + call.replyStatus + ' — ' + (call.replyLabel || '')
       setStep('done')
       refresh()
     })
