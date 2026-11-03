@@ -57,8 +57,8 @@
     </div>
     <div class="row" style="margin-top:.75rem">
       <div>
-        <label>Own MMSI</label>
-        <input id="ownMmsi" size="12">
+        <label>Own MMSI (blank = Signal K)</label>
+        <input id="ownMmsi" size="12" placeholder="vessels.self.mmsi">
       </div>
       <div>
         <label>DSC enabled</label>
@@ -120,6 +120,7 @@
       <div class="row" style="margin-top:.75rem">
         <span class="pill" id="rxPending">pending ch —</span>
         <span class="pill" id="rxKind">—</span>
+        <span class="pill" id="rxForward">SK forward —</span>
       </div>
       <label style="margin-top:.75rem">Channel packet (130845)</label>
       <pre id="rxChannelPkt">—</pre>

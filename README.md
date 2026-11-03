@@ -13,7 +13,7 @@ Emulate a **B&G V60B** on NMEA 2000 so a Zeus/MFDApp **Call** button can enable,
 4. Reassembles Zeus **fast-packet** Call frames on the candump path (`lib/fast-packet.js`).
 5. Webapp: banner shows **Call setup** (channel from `130845`) until the MFD Call button sends the dial; then **Calling** / **Called** with **MMSI + channel**. Packet dumps and bus log below.
 
-Lab default Own MMSI: **`244999001`** (made-up test, NL MID). Set the same in MFD `Settings.ini` `MMSI=`.
+Own MMSI defaults to **`vessels.self.mmsi`** from Signal K (leave plugin config blank). Override in plugin settings or set `V50_MMSI` / `V60_MMSI` for standalone lab use. Match the same value in MFD `Settings.ini` `MMSI=` when testing Call enablement.
 
 ## DSC Call on the wire (V60B firmware — CERTAIN)
 
@@ -118,6 +118,18 @@ sudo CAN_DEVICE=can0 PORT=3099 V50_MMSI=244999001 npm run standalone
 - `pendingChannel` — last `130845` `11/AD` value (setup; not a dial yet)
 - `lastCallRequest` — assembled request (`phase`, `channel`, `mmsi`, both packets, reply)
 - `lastReceivedPacket` / `lastCall` / `calls` / `busLog`
+- `lastDscForward` — result of PUT `communication.vhf.dsc.call` after an OK dial (when `forwardDscToSignalk` is on)
+
+### Forward DSC dial to Signal K
+
+On a successful dial (reply status 0), the plugin PUTs:
+
+```
+communication.vhf.dsc.call
+{ "mmsi": "244123456", "channel": 8, "type": "individual", "category": "routine" }
+```
+
+Any plugin that handles that path can TX the call. Disable with **Forward DSC dial to Signal K** (`forwardDscToSignalk: false`) for lab-only installs.
 
 `lastCallRequest.phase`: `channel` → `dial` → `complete` (or legacy `init-event`).
 

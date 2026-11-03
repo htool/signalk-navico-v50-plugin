@@ -42,8 +42,10 @@ module.exports = function (app) {
         },
         ownMmsi: {
           type: 'string',
-          title: 'Own MMSI (lab test)',
-          default: '244999001',
+          title: 'Own MMSI',
+          description:
+            'Leave blank to use vessels.self.mmsi from Signal K (AIS / vessel identity).',
+          default: '',
         },
         dscEnabled: {
           type: 'boolean',
@@ -55,6 +57,13 @@ module.exports = function (app) {
           title: 'Auto-reply status byte (0=OK)',
           default: 0,
           enum: [0, 1, 2, 3, 4, 5, 6],
+        },
+        forwardDscToSignalk: {
+          type: 'boolean',
+          title: 'Forward DSC dial to Signal K',
+          description:
+            'On OK dial, PUT vessels.self/communication.vhf.dsc.call so another plugin can TX the call.',
+          default: true,
         },
       },
     }

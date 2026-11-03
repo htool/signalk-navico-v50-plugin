@@ -180,6 +180,22 @@
         : (pkt && pkt.kind) ? pkt.kind
         : (pkt && pkt.layout) || '—'
 
+    var fwd = st.lastDscForward
+    var fwdEl = document.getElementById('rxForward')
+    if (fwd && fwd.ok) {
+      fwdEl.textContent = 'SK forward ok · ' + (fwd.mmsi || '') + ' ch ' + (fwd.channel != null ? fwd.channel : '')
+      fwdEl.className = 'pill ok'
+    } else if (fwd && fwd.error) {
+      fwdEl.textContent = 'SK forward: ' + fwd.error
+      fwdEl.className = 'pill bad'
+    } else if (st.forwardDscToSignalk === false) {
+      fwdEl.textContent = 'SK forward off'
+      fwdEl.className = 'pill'
+    } else {
+      fwdEl.textContent = 'SK forward —'
+      fwdEl.className = 'pill'
+    }
+
     document.getElementById('rxChannelPkt').textContent = fmtPkt(req && req.channelPacket)
     document.getElementById('rxDialPkt').textContent = fmtPkt(req && req.dialPacket)
     document.getElementById('rxJson').textContent = pkt ? JSON.stringify(pkt, null, 2) : '—'
@@ -193,7 +209,12 @@
     var cs = document.getElementById('cansend')
     cs.textContent = st.cansend ? 'cansend' : 'waiting'
     cs.className = 'pill ' + (st.cansend ? 'ok' : '')
-    document.getElementById('ownMmsi').value = st.ownMmsi || ''
+    var ownInput = document.getElementById('ownMmsi')
+    // Keep config field blank when using vessels.self.mmsi; show effective as placeholder.
+    ownInput.value = st.ownMmsiConfigured || ''
+    ownInput.placeholder = st.ownMmsiSource === 'signalk'
+      ? (st.ownMmsi || 'from Signal K')
+      : 'vessels.self.mmsi'
     document.getElementById('dscEnabled').value = st.dscEnabled ? 'true' : 'false'
     document.getElementById('autoReply').value = String(st.autoReplyStatus)
     document.getElementById('calls').textContent = JSON.stringify(st.calls || [], null, 2)
