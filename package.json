@@ -4,7 +4,7 @@
   "description": "Emulate a B&G V60/V50 VHF on NMEA 2000 so Zeus Call is enabled, with a DSC call-flow webapp",
   "main": "plugin/index.js",
   "scripts": {
-    "test": "node --test test/*.test.js",
+    "test": "node --test test/*.test.js && node scripts/test-npm-publish-check.js",
     "standalone": "node scripts/standalone.js"
   },
   "keywords": [
@@ -16,12 +16,26 @@
   "license": "ISC",
   "signalk": {
     "displayName": "Navico V60 (DSC)",
-    "appIcon": "public/icon.png"
+    "recommends": [
+      "signalk-icom-m510e-plugin"
+    ]
   },
+  "signalk-plugin-enabled-by-default": false,
+  "files": [
+    "plugin",
+    "lib",
+    "public",
+    "README.md",
+    "LICENSE"
+  ],
   "repository": {
     "type": "git",
-    "url": "git@github.com:htool/signalk-navico-v50-plugin.git"
+    "url": "git+https://github.com/htool/signalk-navico-v50-plugin.git"
   },
+  "bugs": {
+    "url": "https://github.com/htool/signalk-navico-v50-plugin/issues"
+  },
+  "homepage": "https://github.com/htool/signalk-navico-v50-plugin#readme",
   "dependencies": {
     "@canboat/canboatjs": "^2.12.0",
     "debug": "^4.3.4"
